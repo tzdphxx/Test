@@ -32,10 +32,12 @@ public class LoginFace {
         user_id = Integer.parseInt(information.split("&")[1].split("=")[1]);
 
         System.out.println("登录成功！你的角色是："+ role);
+
+
         if (role.equals("admin")) {
             new AdminMenu();
         }
-        else {
+        else if (role.equals("student")){
             int id = Utils.userId_To_studentId(user_id);
             new StudentMenu(id);
         }

@@ -18,8 +18,9 @@ public class AdminMenu {
     public AdminMenu() throws SQLException {
         Scanner sc = new Scanner(System.in);
         String choice;
+
         //管理员菜单
-        while (true){
+        while (true) {
             System.out.println("===== 管理员菜单 ======");
             System.out.println("1. 查询所有学生");
             System.out.println("2. 修改学生手机号");
@@ -29,10 +30,10 @@ public class AdminMenu {
             System.out.println("6. 查询某学生的选课情况");
             System.out.println("7. 退出");
             System.out.println("请选择操作(输入 1-7):");
+
+
             //对输入的选项进行验证
             while (true) {
-
-
                 choice = sc.nextLine();
                 if (choice.length() == 1 && choice.charAt(0) >= '1' && choice.charAt(0) <= '7') {
                     break;
@@ -64,5 +65,8 @@ public class AdminMenu {
                     System.exit(0);
             }
         }
+
+
+
     }
 }

@@ -19,7 +19,7 @@ public class RegisterFace {
             System.out.println("请输入用户名：(4~20位，字母开头)");
             name = sc.nextLine();
             if (!Utils.Check_Name(name)){
-                System.out.println("用户名不合法，请重新输入！");
+                System.out.println("用户名不合法或已有用户名，请重新输入！");
                 continue;
             }
             System.out.println("请输入密码：");
@@ -44,6 +44,7 @@ public class RegisterFace {
 
         if (Utils.Adduser(name,password,choice)){
             System.out.println("注册成功！请返回主界面登录。");
+            new MainInterface();
         } else {
             System.out.println("注册失败！");
         }
