@@ -1,0 +1,5 @@
+﻿  QGweek2.c
+  栈.c
+E:\c.code\QGweek2\栈.c(84,15): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+  正在生成代码...
+  QGweek2.vcxproj -> E:\c.code\QGweek2\x64\Debug\QGweek2.exe
