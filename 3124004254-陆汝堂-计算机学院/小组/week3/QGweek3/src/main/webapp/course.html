@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="js/vue.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="js/axios-0.18.0.js"></script>
+    <title></title>
+    <style>
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+
+</head>
+<body>
+
+<div id="app">
+
+    <!--按钮-->
+    <el-row>
+        <el-button type="danger" plain @click="deleteByIds">批量退课</el-button>
+        <el-button type="primary" plain @click="selectAllCourseByTime">选课</el-button>
+        <el-popover
+                placement="right"
+                width="600"
+                trigger="click">
+            <el-table :data="personalData">
+                <el-table-column width="100" property="studentNumber" label="学号"></el-table-column>
+                <el-table-column width="100" property="name" label="姓名"></el-table-column>
+                <el-table-column width="100" property="gender" label="性别"></el-table-column>
+                <el-table-column width="150" property="phone" label="手机号"></el-table-column>
+                <el-table-column width="100" property="enrollmentYear" label="入学年份"></el-table-column>
+            </el-table>
+            <el-button slot="reference">个人信息</el-button>
+        </el-popover>
+    </el-row>
+
+    <!--选课 的表格-->
+    <el-dialog title="选课表" :visible.sync="dialogTableVisible">
+        <el-table :data="selectData">
+            <el-table-column property="courseName" label="课程名称" width="150"></el-table-column>
+            <el-table-column property="courseCode" label="课程编码" width="200"></el-table-column>
+            <el-table-column property="teacherName" label="授课老师"></el-table-column>
+            <el-table-column property="startDate" label="开课时间"></el-table-column>
+            <el-table-column
+                    align="center"
+                    label="操作">
+                <template slot-scope="scope">
+                    <el-row>
+                        <el-button type="primary" @click="addCourse(scope.row)">选课</el-button>
+                    </el-row>
+                </template>
+
+            </el-table-column>
+
+        </el-table>
+    </el-dialog>
+
+    <!--课程的表格-->
+    <template>
+        <el-table
+                :data="tableData"
+                style="width: 100%"
+                :row-class-name="tableRowClassName"
+                @selection-change="handleSelectionChange"
+        >
+            <el-table-column
+                    type="selection"
+                    width="55">
+            </el-table-column>
+            <el-table-column
+                    type="index"
+                    width="50">
+            </el-table-column>
+
+            <el-table-column
+                    prop="courseName"
+                    label="课程名称"
+                    align="center"
+            >
+            </el-table-column>
+
+            <el-table-column
+                    prop="courseCode"
+                    label="课程编码"
+                    align="center"
+            >
+            </el-table-column>
+            <el-table-column
+                    prop="teacherName"
+                    align="center"
+                    label="授课老师">
+            </el-table-column>
+            <el-table-column
+                    prop="startDate"
+                    align="center"
+                    label="开课时间">
+            </el-table-column>
+
+
+            <el-table-column
+                    align="center"
+                    label="操作">
+                <template slot-scope="scope">
+                    <el-row>
+                        <el-button type="danger" @click="deleteByCourseIdAndStudentId(scope.row)">退课</el-button>
+                    </el-row>
+                </template>
+
+            </el-table-column>
+
+        </el-table>
+    </template>
+
+
+</div>
+
+
+
+
+<script>
+    new Vue({
+        el: "#app",
+
+
+        //页面加载时运行
+        mounted() {
+            var result;
+            var url=window.location.search;
+            if(url.indexOf("?")!==-1) {
+                result = url.substr(url.indexOf("=") + 1);
+            }
+            this.studentId = result;
+            this.selectAllByStudentId();
+            this.queryTheStudent();
+        },
+
+        methods: {
+
+
+            queryTheStudent() {
+
+                var _that = this;
+
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/student/queryTheStudent',
+                    params:{
+                        studentId: _that.studentId
+                    }
+                }).then(response => {
+                    this.personalData = [response.data];
+                })
+
+            },
+
+
+            //选课
+            addCourse(row){
+
+                var _this = this;
+
+
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/student_courses/addCourse',
+                    params: {
+                        courseId: row.courseId,
+                        studentId: _this.studentId
+                    }
+                }).then(resp => {
+                    if (resp.data == "success") {
+                        _this.$message({
+                            message: '恭喜你，选课成功',
+                            type: 'success'
+                        });
+                        _this.dialogTableVisible = false;
+                        _this.selectAllByStudentId()
+                    }
+                })
+            },
+
+
+
+            //查询可选的课程
+            selectAllCourseByTime() {
+
+                var _this = this;
+
+                this.dialogTableVisible = true;
+
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/courses/selectAllCourseByTime',
+                    data: JSON.stringify(_this.studentId),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).then(resp => {
+
+                    if (resp.data === "full") {
+                        _this.$message({
+                            message: '选课已满',
+                            type: 'success'
+                        })
+                    }
+
+                    _this.selectData = resp.data;
+
+                })
+            },
+
+
+            //删除单行的函数
+            deleteByCourseIdAndStudentId(row) {
+
+                var _this = this;
+
+                this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    //用户点击确认按钮
+
+                    //发送AJAX请求
+                    axios({
+                        method: 'post',
+                        url: 'http://localhost:8080/QGweek3_war/student_courses/deleteByCourseIdAndStudentId',
+                        params: {
+                            courseId: row.courseId,
+                            studentId: _this.studentId,
+                        }
+                    }).then(function (response) {
+                        if (response.data === "success") {
+                            //删除成功
+
+                            //弹出消息提示
+                            _this.$message({
+                                message: '恭喜你，退课成功',
+                                type: 'success'
+                            });
+
+                            //展示新的数据
+                            _this.selectAllByStudentId();
+                        }
+                    })
+                }).catch(() => {
+                    //用户点击取消按钮
+
+                    this.$message({
+                        type: 'info',
+                        message: '已取消退课'
+                    });
+                });
+            },
+
+
+            selectAllByStudentId() {
+
+                var _this = this;
+
+               axios({
+                    method: 'get',
+                    url: 'http://localhost:8080/QGweek3_war/courses/selectByStudentId',
+
+                    params: {
+                        studentId: _this.studentId,
+                    }
+                }).then(resp => {
+
+                    this.tableData = resp.data;
+                })
+
+            },
+
+
+            tableRowClassName({row, rowIndex}) {
+                if (rowIndex === 1) {
+                    return 'warning-row';
+                } else if (rowIndex === 3) {
+                    return 'success-row';
+                }
+                return '';
+            },
+            // 复选框选中后执行的方法
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+
+                console.log(this.multipleSelection)
+            },
+
+
+
+            deleteByIds() {
+
+
+                var _this = this;
+
+                this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    //用户点击确认按钮
+
+                    //创建一个id数组,[1,2,3,4]  从this.multipleSelection 获取
+                    for (let i = 0; i < this.multipleSelection.length; i++) {
+                        let selectionElement = this.multipleSelection[i];
+                        this.selectIds[i] = selectionElement.courseId;
+                    }
+
+                    //发送AJAX请求
+                    axios({
+                        method: 'post',
+                        url: 'http://localhost:8080/QGweek3_war/student_courses/deleteByIds',
+                        params: {studentId: this.studentId},
+                        data: JSON.stringify(this.selectIds),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(function (response) {
+                        if (response.data === "success") {
+                            //删除成功
+
+                            //展示新的数据
+                            _this.selectAllByStudentId();
+
+                            //弹出消息提示
+                            _this.$message({
+                                message: '恭喜你，退课成功',
+                                type: 'success'
+                            });
+                        }
+                    })
+                }).catch(() => {
+                    //用户点击取消按钮
+
+                    this.$message({
+                        type: 'info',
+                        message: '已取消退课'
+                    });
+                });
+            }
+        },
+        data() {
+
+            return {
+
+                personalData:[{
+                    studentNumber: 10001,
+                    name: '陈宇轩',
+                    gender: '男',
+                    phone: '13812345678',
+                    enrollmentYear: 2020
+                }],
+
+                gridData: [{
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }],
+                selectData: [{
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }],
+
+                dialogTableVisible: false,
+
+                //选择的id
+                selectIds:[],
+
+                //登录的学生的id
+                studentId: '',
+
+                // 添加数据对话框是否展示的标记
+                dialogVisible: false,
+
+                view: false,
+
+                courses: {
+                    courseId : '',
+                    courseCode: '',
+                    courseName: '',
+                    credit: '',
+                    teacherName: '',
+                    startDate: '',
+                },
+
+                // 复选框选中数据集合
+                multipleSelection: [],
+                // 表格数据
+                tableData: [{
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }]
+            }
+        }
+    })
+
+</script>
+
+</body>
+</html>

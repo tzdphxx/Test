@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>用户注册</title>
+    <meta charset="UTF-8">
+    <script src="js/vue.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="js/axios-0.18.0.js"></script>
+
+
+    <style>
+        .register-page {
+            background-image: linear-gradient(180deg, #2af598 0%, #009efd 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .register-title {
+            font-size: 20px;
+            color: #409EFF;
+        }
+        .box-card {
+            width: 420px;
+        }
+        .login-link {
+            float: right;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="app">
+    <div class="register-page">
+        <el-card class="box-card">
+            <div slot="header" class="clearfix">
+                <span class="register-title">📝 用户注册</span>
+            </div>
+            <div class="register-form">
+                <el-form :model="form" :rules="registerRules" ref="registerForm">
+                    <el-form-item prop="userName">
+                        <el-input v-model="form.userName" placeholder="4-16位字母/数字/下划线" clearable>
+                            <template slot="prepend"><i class="el-icon-user"></i></template>
+                        </el-input>
+                    </el-form-item>
+
+                    <el-form-item prop="password">
+                        <el-input type="password" v-model.number="form.password" maxlength="6" placeholder="6位数字" show-password>
+                            <template slot="prepend"><i class="el-icon-lock"></i></template>
+                        </el-input>
+                    </el-form-item>
+
+                    <el-form-item prop="confirmPassword">
+                        <el-input type="password" v-model.number="form.confirmPassword"  maxlength="6" placeholder="请再次输入密码" show-password>
+                            <template slot="prepend"><i class="el-icon-check"></i></template>
+                        </el-input>
+                    </el-form-item>
+
+
+                    <el-form-item>
+                        <el-button
+                                style="width:100%;"
+                                type="primary"
+                                @click="handleRegister"
+                                :loading="loading">
+                            立即注册
+                        </el-button>
+                    </el-form-item>
+                </el-form>
+
+                <div class="login-link" style="margin-top: 15px; text-align: center;">
+                    <el-link type="primary" href="login.html">已有账号？去登录</el-link>
+                </div>
+                <el-dialog
+                        title="填写学生信息"
+                        :visible.sync="dialogVisible"
+                        width="30%">
+                    <el-form :model="studentForm" :rules="studentRules" ref="studentForm" label-width="100px">
+                        <el-form-item label="学生姓名" prop="name">
+                            <el-input v-model="studentForm.name"></el-input>
+                            <template slot="prepend"><i class="el-icon-user-solid"></i></template>
+                        </el-form-item>
+                        <el-form-item label="性别" prop="gender">
+                            <el-radio-group v-model="studentForm.gender">
+                                <el-radio label="男">男</el-radio>
+                                <el-radio label="女">女</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                        <el-form-item label="手机号" prop="phone">
+                            <el-input v-model="studentForm.phone"></el-input>
+                            <template slot="prepend"><i class="el-icon-phone"></i></template>
+                        </el-form-item>
+                        <el-form-item label="入学年份" prop="enrollmentYear">
+                            <el-date-picker
+                                    v-model="studentForm.enrollmentYear"
+                                    type="year"
+                                    placeholder="选择入学年份">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-form>
+                    <span slot="footer" class="dialog-footer">
+                        <el-button @click="dialogVisible = false">取 消</el-button>
+                        <el-button type="primary" @click="submitStudentInfo">确 定</el-button>
+                    </span>
+                </el-dialog>
+
+            </div>
+        </el-card>
+    </div>
+</div>
+
+<script>
+
+
+
+    new Vue({
+        el: '#app',
+        data() {
+
+
+            // 密码验证
+            const validatePassword = (rule, value, callback) => {
+                if (!/(?=.*\d).{6}/.test(value)) {
+                    callback(new Error('需包含6位数字'));
+                } else {
+                    callback();
+                }
+            };
+
+            // 确认密码验证
+            const validateConfirm = (rule, value, callback) => {
+                if (value !== this.form.password) {
+                    callback(new Error('两次输入密码不一致'));
+                } else {
+                    callback();
+                }
+            };
+
+            return {
+
+
+                formInline: {
+                    user: '',
+                    region: ''
+                },
+                dialogVisible: false,
+                studentForm: {
+                    name: '',
+                    gender: '',
+                    studentNumber: '',
+                    phone: '',
+                    enrollmentYear: ''
+                },
+                studentRules: {
+                    name: [
+                        { required: true, message: '请输入学生姓名', trigger: 'blur' },
+                        { min: 2, max: 20, message: '长度在2到20个字符', trigger: 'blur' }
+                    ],
+                    gender: [
+                        { required: true, message: '请选择性别', trigger: 'change' }
+                    ],
+                    phone: [
+                        { required: true, message: '请输入手机号', trigger: 'blur' },
+                        { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+                    ],
+                    enrollmentYear: [
+                        { required: true, message: '请选择入学年份', trigger: 'change' }
+                    ]
+                },
+
+
+
+                form: {
+                    userName: '',
+                    password: '',
+                    confirmPassword: '',
+                },
+
+                loading: false,
+
+                registerRules: {
+                    userName: [
+                        { required: true, message: '用户名不能为空', trigger: 'blur' },
+                        { min: 4, max: 16, message: '长度在4到16个字符', trigger: 'blur' },
+                        { pattern: /^[a-zA-Z0-9_]+$/, message: '只能包含字母、数字和下划线' }
+                    ],
+                    password: [
+                        { required: true, message: '密码不能为空', trigger: 'blur' },
+                        { validator: validatePassword, trigger: 'blur' }
+                    ],
+                    confirmPassword: [
+                        { required: true, message: '请确认密码', trigger: 'blur' },
+                        { validator: validateConfirm, trigger: 'blur' }
+                    ],
+                }
+            }
+        },
+        methods: {
+            handleRegister() {
+                this.$refs.registerForm.validate(valid => {
+                    if (valid) {
+                        this.dialogVisible = true;
+                    } else {
+                        this.$message.warning('请完善表单信息');
+                        return false;
+                    }
+                });
+            },
+            submitStudentInfo() {
+                this.$refs.studentForm.validate(valid => {
+                    if (valid) {
+                        this.loading = true;
+                        // 准备用户注册数据
+                        const registerDataOfUser = {
+                            userName: this.form.userName,
+                            password: this.form.password,
+                            role: 'student'
+                        };
+
+                        // 先注册用户
+                        axios({
+                            method: 'post',
+                            url: 'http://localhost:8080/QGweek3_war/user/add',
+                            data: JSON.stringify(registerDataOfUser),
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        }).then(response => {
+                            // 获取用户ID
+                            const userId = response.data.id;
+
+                            // 准备学生信息数据
+                            const registerDataOfStudent = {
+                                ...this.studentForm,
+                                userId: userId,
+                                studentNumber: userId+10086,
+                                enrollmentYear: this.studentForm.enrollmentYear.getFullYear()
+                            };
+
+                            // 注册学生信息
+                            return axios({
+                                method: 'post',
+                                url: 'http://localhost:8080/QGweek3_war/student/add',
+                                data: JSON.stringify(registerDataOfStudent),
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                        }).then(response => {
+                            if (response.data === 'success') {
+                                this.$message({
+                                    message: '恭喜你，注册成功',
+                                    type: 'success'
+                                });
+                            }
+
+                            this.dialogVisible = false;
+                            // 注册成功后跳转到登录页面
+                            window.location.href = 'http://localhost:8080/QGweek3_war/login.html';
+                        }).catch(error => {
+                            this.$message.error('注册失败：' + error.message);
+
+                        });
+                    } else {
+                        this.$message.warning('请完善学生信息');
+                        return false;
+                    }
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>
