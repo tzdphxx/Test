@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="js/vue.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="js/axios-0.18.0.js"></script>
+    <title>Title</title>
+</head>
+
+<body>
+
+<div id="app">
+
+    <div class="line"></div>
+
+    <!--菜单表-->
+    <el-menu
+            :default-active="activeIndex"
+            class="el-menu-demo"
+            mode="horizontal"
+            @select="handleSelect"
+            background-color="#545c64"
+            text-color="#fff"
+            active-text-color="#ffd04b">
+        <el-menu-item index="1" @click="CourseView()">课程大全</el-menu-item>
+        <el-submenu index="2">
+            <template slot="title">我的工作台</template>
+            <el-menu-item index="2-1" @click="queryAllStudent()">学生</el-menu-item>
+        <el-menu-item index="3" disabled>消息中心</el-menu-item>
+            </el-submenu>
+    </el-menu>
+
+
+    <!--搜索表单-->
+    <el-form :inline="true" :model="CourseSearch" class="demo-form-inline" v-if="IsShowTheCourse === true">
+
+        <el-form-item label="当前状态">
+            <el-select v-model="CourseSearch.status" placeholder="当前状态">
+                <el-option label="已开课" value="1"></el-option>
+                <el-option label="未开课" value="0"></el-option>
+            </el-select>
+        </el-form-item>
+
+        <el-form-item label="课程名称">
+            <el-input v-model="CourseSearch.courseName" placeholder="课程名称"></el-input>
+        </el-form-item>
+
+        <el-form-item label="授课老师">
+            <el-input v-model="CourseSearch.teacherName" placeholder="授课老师"></el-input>
+        </el-form-item>
+
+        <el-form-item>
+            <el-button type="primary" @click="onSubmit">查询</el-button>
+        </el-form-item>
+    </el-form>
+    <!--课程表-->
+    <template>
+
+        <el-table
+                v-if="IsShowTheCourse === true"
+                :data="CourseData"
+                stripe
+                style="width: 100%">
+            <el-table-column
+                    align="center"
+                    prop="courseId"
+                    label="课程ID"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="courseCode"
+                    label="课程编码"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="courseName"
+                    label="课程名称">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="credit"
+                    label="学分">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="teacherName"
+                    label="授课老师">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="startDate"
+                    label="开课时间">
+            </el-table-column>
+
+
+            <el-table-column
+                    align="center"
+                    label="操作">
+                <template slot-scope="scope" v-if="IsShowTheCourse === true">
+                    <el-row>
+                        <el-button type="primary" @click="openEditDialog(scope.row)">修改</el-button>
+                        <el-button type="success" @click="openTheStudentView(scope.row)">详细</el-button>
+                        <el-button type="danger" @click="deleteCourse(scope.row)">删除</el-button>
+                    </el-row>
+                </template>
+
+            </el-table-column>
+        </el-table>
+        <!--分页工具条-->
+        <el-pagination
+                v-if="IsShowTheCourse === true"
+                @size-change="handleSizeChangeOfCourse"
+                @current-change="handleCurrentChangeOfCourse"
+                :current-page="currentPageOfCourse"
+                :page-sizes="[5, 10, 15, 20]"
+                :page-size="5"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="totalCountOfCourse">
+        </el-pagination>
+    </template>
+
+    <!--选某门课的学生-->
+    <el-dialog title="选该课的学生" :visible.sync="TheStudentView" width="50%">
+        <el-table :data="StudentOfCourseData" border>
+            <el-table-column prop="name" label="学生姓名" align="center"></el-table-column>
+        </el-table>
+    </el-dialog>
+
+
+    <!--学生表-->
+    <!--搜索表单-->
+    <el-form :inline="true" :model="StudentSearch" class="demo-form-inline" v-if="IsShowTheStudent === true">
+
+        <el-form-item label="性别">
+            <el-select v-model="StudentSearch.gender" placeholder="性别">
+                <el-option label="男性" value="1"></el-option>
+                <el-option label="女性" value="0"></el-option>
+            </el-select>
+        </el-form-item>
+
+        <el-form-item label="学号">
+            <el-input v-model="StudentSearch.studentNumber" placeholder="学号"></el-input>
+        </el-form-item>
+
+        <el-form-item label="姓名">
+            <el-input v-model="StudentSearch.studentName" placeholder="姓名"></el-input>
+        </el-form-item>
+
+        <el-form-item>
+            <el-button type="primary" @click="onSubmitOfStudent">查询</el-button>
+        </el-form-item>
+    </el-form>
+    <template>
+        <el-table
+                v-if="IsShowTheStudent === true"
+                :data="StudentData"
+                stripe
+                style="width: 100%">
+            <el-table-column
+                    align="center"
+                    prop="studentId"
+                    label="学生ID"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="userId"
+                    label="用户ID"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="studentNumber"
+                    label="学号">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="name"
+                    label="姓名">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="gender"
+                    label="性别">
+            </el-table-column>
+            <el-table-column
+                    align="center"
+                    prop="phone"
+                    label="手机号">
+            </el-table-column>
+
+
+            <el-table-column
+                    align="center"
+                    prop="enrollmentYear"
+                    label="入学时间">
+
+            </el-table-column>
+
+
+            <el-table-column
+                    align="center"
+                    label="操作">
+
+                <template slot-scope="scope">
+                    <el-row>
+                        <el-button type="primary" @click="OpenChangePhoneView(scope.row)">修改</el-button>
+                        <el-button type="primary" @click="selectByStudentId(scope.row)">详细</el-button>
+                    </el-row>
+                </template>
+
+            </el-table-column>
+
+        </el-table>
+        <!--分页工具条-->
+        <el-pagination
+                v-if="IsShowTheStudent === true"
+                @size-change="handleSizeChangeOfStudent"
+                @current-change="handleCurrentChangeOfStudent"
+                :current-page="currentPageOfStudent"
+                :page-sizes="[5, 10, 15, 20]"
+                :page-size="5"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="totalCountOfStudent">
+        </el-pagination>
+    </template>
+
+
+    <!--某学生的课程-->
+
+    <el-dialog title="课程表" :visible.sync="ViewOfTheCourseOfStudent">
+        <el-table :data="CourseOfStudentData">
+            <el-table-column property="courseId" label="课程ID" width="150"></el-table-column>
+            <el-table-column property="courseCode" label="课程编号" width="200"></el-table-column>
+            <el-table-column property="courseName" label="课程名称"></el-table-column>
+            <el-table-column property="credit" label="学分"></el-table-column>
+            <el-table-column property="teacherName" label="授课老师"></el-table-column>
+            <el-table-column property="startDate" label="开课时间"></el-table-column>
+        </el-table>
+    </el-dialog>
+
+
+    <!--修改课程表单-->
+    <el-dialog
+            title="编辑品牌"
+            :visible.sync="editView"
+            width="30%"
+    >
+        <el-form :model="editCourseData" label-width="80px">
+            <el-form-item label="课程ID">
+                <el-input v-model="editCourseData.courseId" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="课程编码">
+                <el-input v-model="editCourseData.courseCode"></el-input>
+            </el-form-item>
+            <el-form-item label="课程名称">
+                <el-input v-model="editCourseData.courseName"></el-input>
+            </el-form-item>
+            <el-form-item label="课程学分">
+                <el-input v-model.number="editCourseData.credit" maxlength="1"></el-input>
+            </el-form-item>
+            <el-form-item label="授课老师">
+                <el-input v-model="editCourseData.teacherName" :disabled="true"></el-input>
+            </el-form-item>
+            <span>开课时间</span>
+            <el-date-picker
+                    v-model="editCourseData.startDate"
+                    type="date"
+                    placeholder="选择日期">
+            </el-date-picker>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="editView = false">取消</el-button>
+            <el-button type="primary" @click="editCourse">确定</el-button>
+        </div>
+    </el-dialog>
+
+
+    <!--修改学生电话表单-->
+    <el-dialog
+            title="编辑学生"
+            :visible.sync="ChangePhoneView"
+            width="30%"
+    >
+        <el-form :model="ChangePhoneData" label-width="80px">
+            <el-form-item label="学生ID">
+                <el-input v-model="ChangePhoneData.studentId" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="用户ID">
+                <el-input v-model="ChangePhoneData.userId" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="学号">
+                <el-input v-model="ChangePhoneData.studentNumber" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="姓名">
+                <el-input v-model.number="ChangePhoneData.name" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="性别">
+                <el-input v-model="ChangePhoneData.gender" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="手机号">
+                <el-input v-model="ChangePhoneData.phone"></el-input>
+            </el-form-item>
+            <el-form-item label="入学时间">
+                <el-input v-model="ChangePhoneData.enrollmentYear" :disabled="true"></el-input>
+            </el-form-item>
+
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="ChangePhoneView= false">取消</el-button>
+            <el-button type="primary" @click="ChangePhone">确定</el-button>
+        </div>
+    </el-dialog>
+
+</div>
+
+
+<script>
+    new Vue({
+        el: '#app',
+
+        mounted() {
+            this.selectAllCourse()
+        },
+
+
+        data() {
+            return {
+
+                //搜索表单
+                CourseSearch:{
+                    courseName: '',
+                    teacherName: '',
+                    status: '',
+                },
+
+                //搜索表单
+                StudentSearch:{
+                    studentNumber:'',
+                    studentName: '',
+                    gender: '',
+                },
+
+
+
+                //时间
+                pickerOptions: {
+                    disabledDate(time) {
+                        return time.getTime() > Date.now();
+                    }
+                },
+
+
+                //每页条数
+                pageSizeOfCourse: 5,
+                //总记录数
+                totalCountOfCourse: 100,
+                // 当前页码
+                currentPageOfCourse: 1,
+
+                //每页条数
+                pageSizeOfStudent: 5,
+                //总记录数
+                totalCountOfStudent: 100,
+                // 当前页码
+                currentPageOfStudent: 1,
+
+
+                //查看该课程的学生
+                TheStudentView : false,
+
+                //修改学生手机号 的对话框
+                ChangePhoneView: false,
+
+                //修改课程的对话框
+                editView: false,
+
+                //菜单
+                activeIndex: '1',
+
+                //控制学生课表
+                ViewOfTheCourseOfStudent: false,
+
+                //控制课程表格
+                IsShowTheCourse: true,
+
+                //控制学生表格
+                IsShowTheStudent: false,
+
+
+                //某课程学生表
+                StudentOfCourseData: [{
+                    studentId: 21,
+                    userId: 22,
+                    studentNumber: 10001,
+                    name: '陈宇轩',
+                    gender: '男',
+                    phone: '13812345678',
+                    enrollmentYear: 2020
+                }, {
+                    studentId: 21,
+                    userId: 22,
+                    studentNumber: 10001,
+                    name: '陈宇轩',
+                    gender: '男',
+                    phone: '13812345678',
+                    enrollmentYear: 2020
+                }, {
+                    studentId: 21,
+                    userId: 22,
+                    studentNumber: 10001,
+                    name: '陈宇轩',
+                    gender: '男',
+                    phone: '13812345678',
+                    enrollmentYear: 2020
+                }],
+
+
+                //学生表格
+                StudentData: [{
+                    studentId: 21,
+                    userId: 22,
+                    studentNumber: 10001,
+                    name: '陈宇轩',
+                    gender: '男',
+                    phone: '13812345678',
+                    enrollmentYear: 2020
+                }, {
+                    studentId: 21,
+                    userId: 22,
+                    studentNumber: 10001,
+                    name: '陈宇轩',
+                    gender: '男',
+                    phone: '13812345678',
+                    enrollmentYear: 2020
+                }, {
+                    studentId: 21,
+                    userId: 22,
+                    studentNumber: 10001,
+                    name: '陈宇轩',
+                    gender: '男',
+                    phone: '13812345678',
+                    enrollmentYear: 2020
+                }],
+
+                //修改学生表格
+                ChangePhoneData: [{
+                    studentId: '',
+                    userId: '',
+                    studentNumber: '',
+                    name: '',
+                    gender: '',
+                    phone: '',
+                    enrollmentYear: ''
+                }],
+
+
+                //学生课表
+                CourseOfStudentData: [{
+                    courseId: '1',
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+                }],
+
+
+                //修改的数据
+                editCourseData:
+                    {
+                        courseId: '',
+                        courseCode: '',
+                        courseName: '',
+                        credit: '',
+                        teacherName: '',
+                        startDate: '',
+                    },
+
+                //全部课程
+                CourseData: [{
+                    courseId: '1',
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+
+                }, {
+                    courseId: '1',
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+                }, {
+                    courseId: '1',
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+                }, {
+                    courseId: '1',
+                    courseCode: 'CS101',
+                    courseName: '计算机科学导论',
+                    credit: '3',
+                    teacherName: 'tzdphxx',
+                    startDate: '2025-09-30',
+                }]
+            }
+        },
+        methods: {
+
+            openTheStudentView(row){
+                var _this = this;
+                this.TheStudentView = true;
+
+                axios({
+                    method: 'post',
+                    url:'http://localhost:8080/QGweek3_war/student/studentsOfCourse',
+                    params:{
+                        courseId: row.courseId
+                    }
+                }).then(resp =>{
+                    _this.StudentOfCourseData = resp.data;
+                })
+            },
+
+            CourseView() {
+                this.IsShowTheCourse = true;
+                this.IsShowTheStudent = false;
+            },
+
+
+            handleSelect(key, keyPath) {
+                console.log(key, keyPath);
+            },
+
+            selectAllCourse() {
+
+                /*var _this = this;
+
+                axios({
+                    method: 'get',
+                    url: 'http://localhost:8080/QGweek3_war/courses/selectAllCourse'
+                }).then(response => {
+                    _this.CourseData = response.data;
+                })*/
+                var _this = this;
+
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/courses/selectAllCourseAndCondition',
+                    params: {
+                        courseName:_this.CourseSearch.courseName,
+                        teacherName:_this.CourseSearch.teacherName,
+                        status:_this.CourseSearch.status,
+                        currentPage:_this.currentPageOfCourse ,
+                        pageSize:_this.pageSizeOfCourse
+                    }
+                }).then(resp => {
+                    this.CourseData = resp.data.rows;
+                    //设置总记录数
+                    this.totalCountOfCourse = resp.data.totalCount;
+                })
+            },
+
+            queryAllStudent() {
+                var _this = this;
+
+                //课表隐藏
+                this.IsShowTheCourse = false;
+
+                //展示学生
+                this.IsShowTheStudent = true;
+
+                /*axios({
+                    method: 'get',
+                    url: 'http://localhost:8080/QGweek3_war/student/queryAllStudent'
+                }).then(response => {
+                    _this.StudentData = response.data;
+                })*/
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/student/selectByPageAndCondition',
+                    params: {
+                        studentNumber:_this.StudentSearch.studentNumber,
+                        studentName:_this.StudentSearch.studentName,
+                        gender:_this.StudentSearch.gender,
+                        currentPage:_this.currentPageOfStudent ,
+                        pageSize:_this.pageSizeOfStudent
+                    }
+                }).then(resp => {
+                    this.StudentData = resp.data.rows;
+                    //设置总记录数
+                    this.totalCountOfStudent = resp.data.totalCount;
+                })
+            },
+
+
+            //某学生的课程
+            selectByStudentId(row) {
+                var _this = this;
+                var studentId = row.studentId;
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/courses/selectByStudentId',
+                    params: {
+                        studentId: studentId
+                    }
+                }).then(response => {
+                    _this.CourseOfStudentData = response.data;
+                    _this.ViewOfTheCourseOfStudent = true;
+                }).catch(error => {
+                    this.$message.error('暂无该生数据')
+                })
+
+            },
+
+            //删除课程
+            deleteCourse(row) {
+                var _this = this;
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/student_courses/deleteCourse',
+                    params: {
+                        courseId: row.courseId
+                    }
+                }).then(resp1 => {
+                        if (resp1.data === 'success') {
+                            axios({
+                                method: 'post',
+                                url: 'http://localhost:8080/QGweek3_war/courses/deleteCourse',
+                                params: {
+                                    courseId: row.courseId
+                                }
+                            }).then(resp2 => {
+                                    if (resp2.data === 'success') {
+                                        _this.$message({
+                                            message: '恭喜你，删除成功',
+                                            type: 'success'
+                                        })
+                                    }
+                                }
+                            )
+                        }
+                    }
+                )
+            },
+            openEditDialog(row) {
+                this.editCourseData = row;
+                this.editView = true;
+            },
+
+            editCourse() {
+                var _this = this;
+                this.editView = false;
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/courses/editCourse',
+                    data: JSON.stringify(_this.editCourseData),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).then(response => {
+                    if (response.data === 'success') {
+                        _this.$message({
+                            message: '恭喜你，修改成功',
+                            type: 'success'
+                        })
+                    }
+                    this.selectAllCourse();
+                })
+            },
+            OpenChangePhoneView(row) {
+                this.ChangePhoneData = row;
+                this.ChangePhoneView = true;
+            },
+
+            ChangePhone() {
+                var _this = this;
+                this.ChangePhoneView = false;
+                axios({
+                    method: 'post',
+                    url: 'http://localhost:8080/QGweek3_war/student/changePhone',
+                    params: {
+                        studentId: _this.ChangePhoneData.studentId,
+                        phone: _this.ChangePhoneData.phone,
+                    }
+                }).then(response => {
+                    if (response.data === 'success') {
+                        _this.$message({
+                            message: '修改成功',
+                            type: 'success'
+                        })
+                    }
+                })
+            },
+            //分页
+            handleSizeChangeOfCourse(val) {
+                //console.log(`每页 ${val} 条`);
+                //设置每页显示条数
+                this.pageSizeOfCourse = val;
+                this.selectAllCourse();
+            },
+            handleCurrentChangeOfCourse(val) {
+                //console.log(`当前页: ${val}`);
+                //重新设置当前页码
+                this.currentPageOfCourse = val;
+                this.selectAllCourse();
+            },
+            //分页
+            handleSizeChangeOfStudent(val) {
+                //console.log(`每页 ${val} 条`);
+                //设置每页显示条数
+                this.pageSizeOfStudent = val;
+                this.queryAllStudent();
+            },
+            handleCurrentChangeOfStudent(val) {
+                //console.log(`当前页: ${val}`);
+                //重新设置当前页码
+                this.currentPageOfStudent = val;
+                this.queryAllStudent();
+            },
+            onSubmit(){
+                this.selectAllCourse();
+            },
+            onSubmitOfStudent(){
+                this.queryAllStudent();
+            }
+        }
+    })
+</script>
+
+</body>
+
+</html>
